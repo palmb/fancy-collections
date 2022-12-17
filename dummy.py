@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import pandas as pd
-from goodbadugly import DictOfPandas
+from fancy_collections import DictOfPandas
 
 if __name__ == "__main__":
     class Fail:

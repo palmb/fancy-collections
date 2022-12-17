@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 import pandas as pd
-from goodbadugly.core import Axis
+from fancy_collections.core import Axis
 from sliceable_dict import SliceDict
 
 T, F = True, False

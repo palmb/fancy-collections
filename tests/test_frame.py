@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import pandas as pd
 import pytest
-from goodbadugly import DictOfPandas
+from fancy_collections import DictOfPandas
 
 # pytestmark = pytest.mark.skip
 
