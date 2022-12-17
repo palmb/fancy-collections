@@ -2,17 +2,17 @@
 import numpy as np
 import pytest
 import pandas as pd
-from operator import or_
-from goodbadugly.base import _BaseContainer, _Axis
+from goodbadugly.frame import _Axis
+from sliceable_dict import SliceDict
 
 T, F = True, False
 
 
-class IndexContainer(_BaseContainer):
+class IndexContainer(SliceDict):
     index = _Axis("index")
 
 
-class ColumnContainer(_BaseContainer):
+class ColumnContainer(SliceDict):
     columns = _Axis("columns")
 
 
@@ -20,10 +20,10 @@ class ColumnContainer(_BaseContainer):
 @pytest.mark.parametrize("kwargs", [dict(), dict(a=99), dict(x=99)])
 @pytest.mark.parametrize("args", [(), ([[1, 2]],), (dict(a="a", b="b"),)])
 def test_creation(klass, args, kwargs):
-    bc = klass(*args, **kwargs)
-    assert isinstance(bc, klass)
-    assert isinstance(bc, _BaseContainer)
-    # assert isinstance(bc, dict)
+    inst = klass(*args, **kwargs)
+    assert isinstance(inst, klass)
+    assert isinstance(inst, SliceDict)
+    assert isinstance(inst, dict)
 
 
 @pytest.mark.parametrize("klass", [ColumnContainer, IndexContainer])
@@ -41,12 +41,12 @@ def test_attrs(klass, attr):
 )
 @pytest.mark.parametrize("key", [None, 1, 1.0, "a", b"a", np.nan])
 def test_axis(klass, axis_name, key):
-    bc = klass(zzz=None)
-    assert getattr(bc, axis_name).equals(pd.Index(["zzz"]))
-    bc[key] = None
-    assert getattr(bc, axis_name).equals(pd.Index(["zzz", key]))
-    del bc[key]
-    assert getattr(bc, axis_name).equals(pd.Index(["zzz"]))
+    inst = klass(zzz=None)
+    assert getattr(inst, axis_name).equals(pd.Index(["zzz"]))
+    inst[key] = None
+    assert getattr(inst, axis_name).equals(pd.Index(["zzz", key]))
+    del inst[key]
+    assert getattr(inst, axis_name).equals(pd.Index(["zzz"]))
 
 
 @pytest.mark.parametrize(
@@ -67,9 +67,9 @@ def test_axis(klass, axis_name, key):
 def test_index_update__methods_with_result(
         klass, axis_name, setter_name, args, expected
 ):
-    bc = klass(a=None)
-    result = getattr(bc, setter_name)(*args)
-    assert isinstance(result, _BaseContainer)
+    inst = klass(a=None)
+    result = getattr(inst, setter_name)(*args)
+    assert isinstance(result, SliceDict)
     assert isinstance(result, klass)
     assert getattr(result, axis_name).equals(expected)
 
@@ -94,28 +94,28 @@ def test_index_update__methods_with_result(
     ],
 )
 def test_index_update__inplace_methods(klass, axis_name, setter_name, args, expected):
-    bc = klass(a=None)
-    getattr(bc, setter_name)(*args)
-    assert getattr(bc, axis_name).equals(expected)
+    inst = klass(a=None)
+    getattr(inst, setter_name)(*args)
+    assert getattr(inst, axis_name).equals(expected)
 
 
 @pytest.mark.parametrize(
     "klass,axis_name", [(ColumnContainer, "columns"), (IndexContainer, "index")]
 )
 def test_index_setter(klass, axis_name):
-    bc = klass(a=10, b=20, c=30)
-    setattr(bc, axis_name, [1, 2, 3])
-    assert bc.keys() == dict.fromkeys([1, 2, 3]).keys()
+    inst = klass(a=10, b=20, c=30)
+    setattr(inst, axis_name, [1, 2, 3])
+    assert inst.keys() == dict.fromkeys([1, 2, 3]).keys()
     with pytest.raises(ValueError):
-        setattr(bc, axis_name, [1, 2])
+        setattr(inst, axis_name, [1, 2])
 
 
 def test_set_index_fails_and_keep_old_keys():
     class RestrictedChild(ColumnContainer):
-        def _set_single_item_callback(self, key, value):
+        def __setitem_single__(self, key, value):
             if not isinstance(key, str):
                 raise TypeError()
-            return key, value
+            super().__setitem_single__(key, value)
 
     rc = RestrictedChild(a=10, b=20, c=30)
     with pytest.raises(TypeError):

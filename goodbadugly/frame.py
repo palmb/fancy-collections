@@ -11,7 +11,7 @@ import numpy as np
 import functools
 
 import pandas as pd
-from SliceDict import SliceDict
+from sliceable_dict import SliceDict
 from .formatting import Formatter
 
 
@@ -48,6 +48,7 @@ class _Axis:
             instance.data = data
             raise type(e)(f"setting new {self._name} failed, because {e}") from None
 
+
 class IndexMixin:
     @abc.abstractmethod
     def values(self) -> ValuesView[pd.Series | pd.DataFrame]:
@@ -78,7 +79,7 @@ class Frame(SliceDict, IndexMixin):
 
     @property
     def empty(self):
-        return len(self.columns) == 0
+        return len(self.keys()) == 0
 
     def _set_single_item_callback(self, key, value):
         if not isinstance(value, (pd.Series, pd.DataFrame)):
@@ -140,10 +141,10 @@ class Frame(SliceDict, IndexMixin):
         return self.to_string(max_rows=max_rows, min_rows=min_rows)
 
     def to_string(
-        self,
-        max_rows: int | None = None,
-        min_rows: int | None = None,
-        show_df_column_names: bool = True,
+            self,
+            max_rows: int | None = None,
+            min_rows: int | None = None,
+            show_df_column_names: bool = True,
     ):
         """
         Render a Frame to a console-friendly tabular output.
