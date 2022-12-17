@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from __future__ import annotations
-from typing import Any, Hashable, Tuple, List, Iterable
+from typing import Tuple, List, Iterable
 import pandas as pd
+from .lib import KT, VT
 
 
 class Formatter:
@@ -21,7 +22,7 @@ class Formatter:
         self._obj = obj
         self.__to_render = []
 
-    def key_to_string(self, key: Hashable, obj: Any) -> str:  # noqa
+    def key_to_string(self, key: KT, obj: VT) -> str:  # noqa
         """
         stringify key.
 
@@ -44,7 +45,7 @@ class Formatter:
     def to_string(self) -> str:
         if len(self._obj) == 0:
             return self._stringify_empty_class(self._obj)
-        for key, val in self._obj.data.items():
+        for key, val in self._obj.items():
             key = self.key_to_string(key, val)
             try:
                 string = self.stringify(val)
@@ -55,11 +56,13 @@ class Formatter:
             self._add(key, string.splitlines())
         return self._render()
 
-    def stringify(self, obj: Any) -> str | NotImplemented:
-        if isinstance(obj, pd.DataFrame):
-            return self._stringify_DataFrame(obj)
+    def stringify(self, obj: VT) -> str | NotImplemented:
+        if isinstance(obj, pd.Index):
+            return self._stringify_Index(obj)
         if isinstance(obj, pd.Series):
             return self._stringify_Series(obj)
+        if isinstance(obj, pd.DataFrame):
+            return self._stringify_DataFrame(obj)
         return NotImplemented
 
     def _stringify_DataFrame(self, df: pd.DataFrame) -> str:
@@ -90,27 +93,26 @@ class Formatter:
         return idx.to_string(**self._pd_options)
 
     def _render(self) -> str:
-        string = ""
-        string += self.__make_header_row() + "\n"
-        string += self.__make_seperator_row() + "\n"
+        string = self.__make_header()
+        string += self.__make_seperator_row()
         while True:
             row = self.__make_body_row()
             if row is None:
                 break
-            string += row + "\n"
+            string += row
         return string
 
-    def __make_header_row(self) -> str:
+    def __make_header(self) -> str:
         line = ""
         for key, _, n in self.__to_render:
             line += key.rjust(n) + self.column_seperator
-        return line
+        return line + "\n"
 
     def __make_seperator_row(self) -> str:
         line = ""
         for _, _, n in self.__to_render:
             line += self.header_seperator * n + self.column_seperator
-        return line
+        return line + "\n"
 
     def __make_body_row(self) -> str | None:
         line = ""
@@ -122,7 +124,7 @@ class Formatter:
         if count == len(self.__to_render):
             # all generators are exhausted
             return None
-        return line
+        return line + "\n"
 
     def _add(self, key: str, lines: List[str]) -> None:
         n = self._get_maxlen(lines + [key])
@@ -149,7 +151,7 @@ class Formatter:
         str_or_lines: str | List[str], width: int | None = None, site="left"
     ) -> str | List[str]:
         """
-        Justify a string with newlines or a list of strings.
+        Justify a string containing newlines or a list of strings.
 
         Parameters
         ----------

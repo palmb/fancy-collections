@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import pandas as pd
 import pytest
-from goodbadugly import Frame
+from goodbadugly import DictOfPandas
 
 # pytestmark = pytest.mark.skip
 
@@ -20,7 +20,7 @@ from goodbadugly import Frame
 @pytest.mark.parametrize("dtype", [None, int, "float", object, "O"])
 @pytest.mark.parametrize("copy", [None, False, True])
 def test_constructor(data, index, dtype, copy):
-    frame = Frame(data=data, columns=None, index=index, dtype=dtype, copy=copy)
+    frame = DictOfPandas(data=data, columns=None, index=index, dtype=dtype, copy=copy)
     for c in frame:
         assert isinstance(frame[c], (pd.Series, pd.DataFrame))
 
@@ -28,7 +28,7 @@ def test_constructor(data, index, dtype, copy):
 @pytest.mark.parametrize(
     "data,columns,expected",
     [
-        # empty Frame
+        # empty DictOfPandas
         (None, None, pd.Index([])),
         ([], None, pd.Index([])),
         (dict(), None, pd.Index([])),
@@ -55,7 +55,7 @@ def test_constructor(data, index, dtype, copy):
     ],
 )
 def test_constructor_columns(data, columns, expected):
-    frame = Frame(data=data, columns=columns)
+    frame = DictOfPandas(data=data, columns=columns)
     assert frame.columns.equals(expected)
 
 
@@ -71,4 +71,4 @@ def test_constructor_columns(data, columns, expected):
 #     ],
 # )
 # def test_constructor_index(data, index):
-#     frame = Frame(data=data, index=index)
+#     frame = DictOfPandas(data=data, index=index)

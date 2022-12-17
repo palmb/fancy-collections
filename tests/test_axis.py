@@ -2,18 +2,18 @@
 import numpy as np
 import pytest
 import pandas as pd
-from goodbadugly.frame import _Axis
+from goodbadugly.core import Axis
 from sliceable_dict import SliceDict
 
 T, F = True, False
 
 
 class IndexContainer(SliceDict):
-    index = _Axis("index")
+    index = Axis("index")
 
 
 class ColumnContainer(SliceDict):
-    columns = _Axis("columns")
+    columns = Axis("columns")
 
 
 @pytest.mark.parametrize("klass", [ColumnContainer, IndexContainer])

@@ -1,3 +1,7 @@
 #!/usr/bin/env python
 
-from .frame import Frame, SaqcFrame
+from .core import (
+    SliceDict,
+    DictOfPandas,
+    DictOfSeries,
+)

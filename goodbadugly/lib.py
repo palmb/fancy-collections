@@ -3,6 +3,12 @@ from __future__ import annotations
 
 import functools
 import logging
+from typing import Hashable, Any
+import pandas as pd
+
+KT = Hashable
+VT = Any
+PD = pd.Index | pd.Series | pd.DataFrame
 
 
 def log_call(func: callable) -> callable:
@@ -12,3 +18,4 @@ def log_call(func: callable) -> callable:
         logging.debug(f"{func.__name__} was called")
         return func(*args, **kwargs)
     return wrapper
+

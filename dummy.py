@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import pandas as pd
-from goodbadugly import Frame
+from goodbadugly import DictOfPandas
 
 if __name__ == "__main__":
     class Fail:
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     df=pd.DataFrame(columns=list('abc'), index=range(7))
     df.iloc[2,2] = 'fooo'
     print(x)
-    f = Frame(
+    f = DictOfPandas(
         df_empty=pd.DataFrame(),
         df_empty_w_index=pd.DataFrame(index=range(400)),
         df_empty_w_columns=pd.DataFrame(columns=['a', 'b']),
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         df=df,
         fail=fail,
     )
-    print(Frame())
+    print(DictOfPandas())
     # print(f.to_string())
     # print(f.to_string(show_df_column_names=False))
     print(f)
