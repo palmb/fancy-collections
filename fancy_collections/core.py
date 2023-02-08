@@ -6,7 +6,7 @@ import abc
 import numpy as np
 import functools
 import pandas as pd
-from sliceable_dict import SliceDict
+from sliceable_dict import TypedSliceDict
 
 from .formatting import Formatter
 from .lib import VT, KT, PD
@@ -27,9 +27,8 @@ class Axis:
             raise ValueError(f"{self._name} must not have duplicates.")
         if len(instance.keys()) != len(value):
             raise ValueError(
-                f"Length mismatch: Expected {self._name} have "
-                f"{len(instance.keys())} elements, new values "
-                f"have {len(value)} elements."
+                f"{self._name} has {len(instance.keys())} elements, "
+                f"but {len(value)} values was passed."
             )
         # We must expand the zip now, because values()
         # are a view and would be empty after clear().
@@ -38,8 +37,8 @@ class Axis:
         try:
             instance.data = {}
             # We cannot set data directly, because inherit classes
-            # may restrict keys by type or value. So we need to use
-            # the regular update() method.
+            # might restrict keys to some specific types or values,
+            # so we use the regular update() method.
             instance.update(new)
             data = instance.data
         except Exception as e:
@@ -73,24 +72,23 @@ class IndexMixin:
         return pd.Index([])
 
 
-class DictOfPandas(SliceDict, IndexMixin):
+class DictOfPandas(TypedSliceDict, IndexMixin):
+
+    # restrict keys to strings and
+    # values to pandas objects
+    _key_types = (str, )
+    _value_types = (pd.Series, pd.DataFrame, pd.Index)
+
+    # .columns property
+    columns = Axis("columns")
+
     @property
     def _constructor(self) -> type[DictOfPandas]:
         return DictOfPandas
 
-    columns = Axis("columns")
-
     @property
     def empty(self) -> bool:
         return len(self.keys()) == 0
-
-    def __setitem_single__(self, key: KT, value: PD) -> None:
-        if isinstance(value, (pd.Series, pd.DataFrame, pd.Index)):
-            return super().__setitem_single__(key, value)
-        raise TypeError(
-            f"Value must be of type pd.Index, pd.Series or "
-            f"pd.DataFrame, not {type(value).__name__}"
-        )
 
     def _uniquify_name(self, name: str) -> str:
         if name not in self.keys():
@@ -171,30 +169,3 @@ class DictOfPandas(SliceDict, IndexMixin):
             Returns the result as a string.
         """
         return Formatter(self, max_rows, min_rows, show_df_column_names).to_string()
-
-
-class DictOfSeries(DictOfPandas):
-    def __setitem_single__(self, key: KT, value: pd.Series):
-        if isinstance(value, pd.Series):
-            return super().__setitem_single__(key, value)
-        raise TypeError(
-            f"Values must be of type pandas.Series, not {type(value).__name__}"
-        )
-
-
-class SaqcFrame(DictOfPandas):  # dios replacement
-    def _set_single_item_callback(self, key, value):
-        if not isinstance(key, str):
-            raise TypeError(f"Keys must be of type string, not {type(key).__name__}")
-        if isinstance(value, list):
-            value = pd.Series(value)
-        # if isinstance(value, pd.DataFrame):
-        #     raise TypeError('saqc cant handle dataframes')
-
-        return super()._set_single_item_callback(key, value)
-
-    def to_df(self):
-        warnings.warn(
-            "to_df() is deprecated, use " "to_dataframe() instead.", DeprecationWarning
-        )
-        return self.to_dataframe()
