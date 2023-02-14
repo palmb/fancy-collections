@@ -59,7 +59,7 @@ def test_axis(klass, axis_name, key):
         ("__copy__", (), pd.Index(["a"])),
         ("__or__", ({"b": 1},), pd.Index(["a", "b"])),
         ("__ror__", ({"b": 1},), pd.Index(["b", "a"])),
-        ("__ior__", ({"b": 1},), pd.Index(["a", "b"])),  # works inplace and return self
+        ("__ior__", ({"b": 1},), pd.Index(["a", "b"])),  # works inplace AND return self
         ("fromkeys", (["b"],), pd.Index(["b"])),
         ("copy", (), pd.Index(["a"])),
     ],
@@ -83,7 +83,7 @@ def test_index_update__methods_with_result(
         # `{"a": None}` is in the container per default
         ("__setitem__", ("b", 1), pd.Index(["a", "b"])),
         ("__delitem__", ("a",), pd.Index([])),
-        ("__ior__", ({"b": 1},), pd.Index(["a", "b"])),  # works inplace and return self
+        ("__ior__", ({"b": 1},), pd.Index(["a", "b"])),  # works inplace AND return self
         ("setdefault", ("b", 1), pd.Index(["a", "b"])),
         ("setdefault", ("a", 1), pd.Index(["a"])),
         ("pop", ("a",), pd.Index([])),

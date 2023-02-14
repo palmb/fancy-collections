@@ -1,0 +1,4 @@
+pandas
+numpy
+pytest
+git+https://github.com/palmb/slice-dict.git

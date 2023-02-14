@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import annotations
 import warnings
-from typing import List, ValuesView
+from typing import List, ValuesView, Any
 import abc
 import numpy as np
 import functools
@@ -9,7 +9,6 @@ import pandas as pd
 from sliceable_dict import TypedSliceDict
 
 from .formatting import Formatter
-from .lib import VT, KT, PD
 
 
 class Axis:
@@ -21,7 +20,7 @@ class Axis:
             return self  # noqa
         return pd.Index(instance.keys())
 
-    def __set__(self, instance: DictOfPandas, value: VT) -> None:
+    def __set__(self, instance: DictOfPandas, value: Any) -> None:
         value = pd.Index(value)
         if not value.is_unique:
             raise ValueError(f"{self._name} must not have duplicates.")
@@ -49,7 +48,7 @@ class Axis:
 
 class IndexMixin:
     @abc.abstractmethod
-    def values(self) -> ValuesView[PD]:
+    def values(self) -> ValuesView[pd.Series | pd.DataFrame | pd.Index]:
         ...
 
     def _get_indexes(self) -> List[pd.Index]:

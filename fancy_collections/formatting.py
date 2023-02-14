@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 from __future__ import annotations
-from typing import Tuple, List, Iterable
+from typing import Tuple, List, Iterable, Any
 import pandas as pd
-from .lib import KT, VT
 
 
 class Formatter:
@@ -22,7 +21,7 @@ class Formatter:
         self._obj = obj
         self.__to_render = []
 
-    def key_to_string(self, key: KT, obj: VT) -> str:  # noqa
+    def key_to_string(self, key: Any, obj: Any) -> str:  # noqa
         """
         stringify key.
 
@@ -56,7 +55,7 @@ class Formatter:
             self._add(key, string.splitlines())
         return self._render()
 
-    def stringify(self, obj: VT) -> str | NotImplemented:
+    def stringify(self, obj: Any) -> str | NotImplemented:
         if isinstance(obj, pd.Index):
             return self._stringify_Index(obj)
         if isinstance(obj, pd.Series):
