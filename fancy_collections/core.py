@@ -9,6 +9,7 @@ import pandas as pd
 from sliceable_dict import TypedSliceDict
 
 from .formatting import Formatter
+from . import lib
 
 
 class Axis:
@@ -72,10 +73,9 @@ class IndexMixin:
 
 
 class DictOfPandas(TypedSliceDict, IndexMixin):
-
     # restrict keys to strings and
     # values to pandas objects
-    _key_types = (str, )
+    _key_types = ()
     _value_types = (pd.Series, pd.DataFrame, pd.Index)
 
     # .columns property
@@ -87,7 +87,28 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
 
     @property
     def empty(self) -> bool:
-        return len(self.keys()) == 0
+        """
+        Indicator whether DictOfPandas is empty.
+
+        True if DictOfPandas is entirely empty (no items) or all
+        items are empty themselves.
+
+        Notes
+        -----
+        To only check if DictOfPandas has no items use ``len`` or ``bool``
+        buildins.
+
+        Examples
+        --------
+        todo example for empty keys
+        todo example for empty items
+        todo example vice-versa both
+
+        Returns
+        -------
+        bool
+        """
+        return len(self) == 0 or all(o.empty for o in self.values())
 
     def _uniquify_name(self, name: str) -> str:
         if name not in self.keys():
@@ -97,16 +118,26 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             i += 1
         return f"{name}({i})"
 
-    def flatten(self) -> DictOfPandas:
+    def flatten(self, promote_index: bool = False) -> DictOfPandas:
         """
         Promote dataframe columns to first level columns.
 
         Prepend column names of an inner dataframe with the
         key/column name of the outer frame.
 
+        Parameters
+        ----------
+        promote_index : bool, default False
+            Makes `pandas.Series` from items of type `pandas.Index` if True.
+            Every item of the resulting DictOfPandas be a series then.
+
+        Returns
+        -------
+        DictOfPandas
+
         Examples
         --------
-        >>> frame = DictOfPandas(key0=pd.DataFrame(np.arange(4).reshape(2,2), columns=['c0', 'c1']))
+        >>> frame = DictOfPandas(key0=pd.DataFrame({'c0': [0, 1], "c1": [1, 3]}))
         >>> frame
              key0 |
         ========= |
@@ -125,17 +156,87 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             if isinstance(value, pd.DataFrame):
                 for col, ser in dict(value).items():
                     data[self._uniquify_name(f"{key}_{col}")] = ser
+            if promote_index and isinstance(value, pd.Index):
+                data[key] = value.to_series()
             else:
                 data[key] = value
         return self.__class__(data)
 
-    def to_dataframe(self) -> pd.DataFrame:
-        return pd.DataFrame(dict(self.flatten()))
+    def to_dataframe(self, how="outer") -> pd.DataFrame:
+        """
+        Transform DictOfPandas to a pandas.DataFrame.
+
+        Because a pandas.DataFrame can not handle data of different
+        length, but DictOfPandas can, the missing data is filled with
+        NaNs or is dropped, depending on the keyword `how`.
+
+        Items of type `pandas.Index` will become `pandas.Series` with
+        identical index and values as the original Index.
+
+        For items of type `pandas.Dataframe` each column will become an own
+        column in the resulting frame (for more detail see ``flatten``)
+
+        Parameters
+        ----------
+        how : {'outer', 'inner'}, default 'outer'
+            Defines how the resulting DataFrame index is generated.
+
+            - ``outer`` : The resulting DataFrame index is the combination
+                of all indices merged together. If a column misses values at
+                new index locations, `NaN`'s are filled.
+            - ``inner`` : Only indices that are present in all columns are used
+                for the resulting index. Filling logic is not needed, but values
+                are dropped, if a column has indices that are not known to all
+                other columns.
+
+        Returns
+        -------
+        frame: pandas.DataFrame
+
+        See Also
+        --------
+        DictOfPandas.flatten:  Make series from DataFrame items in a DictOfPandas
+
+        Examples
+        --------
+        Missing data locations are filled with NaN's
+
+        >>> from fancy_collections import DictOfPandas
+        >>> a = pd.Series(11, index=range(2))
+        >>> b = pd.Series(22, index=range(3))
+        >>> c = pd.Series(33, index=range(1,9,3))
+        >>> di = DictOfPandas(a=a, b=b, c=c)
+        >>> di
+            a |     b |     c |
+        ===== | ===== | ===== |
+        0  11 | 0  22 | 1  33 |
+        1  11 | 1  22 | 4  33 |
+              | 2  22 | 7  33 |
+
+        >>> di.to_dataframe()
+        columns     a     b     c
+        0        11.0  22.0   NaN
+        1        11.0  22.0  33.0
+        2         NaN  22.0   NaN
+        4         NaN   NaN  33.0
+        7         NaN   NaN  33.0
+
+        or is dropped if `how='inner'`
+
+        >>> di.to_dataframe(how='inner')
+        columns   a   b   c
+        1        11  22  33
+
+        todo: examples with dataframe
+        """
+        if how not in ['inner', 'outer']:
+            raise ValueError("`how` must be one of 'inner' or 'outer'")
+        df = pd.DataFrame(dict(self.flatten(promote_index=True)))
+        if how == "inner":
+            df = df.reindex(self.shared_index())
+        return df
 
     def __repr__(self) -> str:
-        return repr(dict(self))
-
-    def __str__(self) -> str:
         max_rows = pd.get_option("display.max_rows")
         min_rows = pd.get_option("display.min_rows")
         return self.to_string(max_rows=max_rows, min_rows=min_rows)
@@ -168,3 +269,19 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             Returns the result as a string.
         """
         return Formatter(self, max_rows, min_rows, show_df_column_names).to_string()
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if not isinstance(other, dict):
+            return False
+        if self.keys() != other.keys():
+            return False
+        # equivalent code:
+        # for key in self.keys():
+        #     if not _pandasObjEqual(self[key], other[key]):
+        #         return False
+        # return True
+        values = zip(self.values(), other.values())
+        eq = lib.pd_obj_equals_other
+        return next(filter(lambda e: not eq(*e), values), True) is True

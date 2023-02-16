@@ -65,7 +65,7 @@ def test_axis(klass, axis_name, key):
     ],
 )
 def test_index_update__methods_with_result(
-        klass, axis_name, setter_name, args, expected
+    klass, axis_name, setter_name, args, expected
 ):
     inst = klass(a=None)
     result = getattr(inst, setter_name)(*args)
@@ -119,5 +119,5 @@ def test_set_index_fails_and_keep_old_keys():
 
     rc = RestrictedChild(a=10, b=20, c=30)
     with pytest.raises(TypeError):
-        rc.columns = ['x', 'y', 9999]
-    assert rc.keys() == dict.fromkeys(['a', 'b', 'c']).keys()
+        rc.columns = ["x", "y", 9999]
+    assert rc.keys() == dict.fromkeys(["a", "b", "c"]).keys()
