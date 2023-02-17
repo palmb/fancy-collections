@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 from __future__ import annotations
-import warnings
-from typing import List, ValuesView, Any
-import abc
-import numpy as np
+
 import functools
+from typing import List, Any
+
 import pandas as pd
 from sliceable_dict import TypedSliceDict
 
-from .formatting import Formatter
 from . import lib
+from .formatting import Formatter
 
 
 class Axis:
@@ -48,11 +47,7 @@ class Axis:
 
 
 class IndexMixin:
-    @abc.abstractmethod
-    def values(self) -> ValuesView[pd.Series | pd.DataFrame | pd.Index]:
-        ...
-
-    def _get_indexes(self) -> List[pd.Index]:
+    def _get_indexes(self: dict) -> List[pd.Index]:
         indexes = []
         for obj in self.values():
             if isinstance(obj, pd.Index):
@@ -63,7 +58,10 @@ class IndexMixin:
         return indexes
 
     def union_index(self) -> pd.Index:
-        return functools.reduce(pd.Index.union, self._get_indexes(), pd.Index([]))
+        indexes = self._get_indexes()
+        if indexes:
+            return functools.reduce(pd.Index.union, self._get_indexes())
+        return pd.Index([])
 
     def shared_index(self) -> pd.Index:
         indexes = self._get_indexes()
@@ -73,7 +71,7 @@ class IndexMixin:
 
 
 class DictOfPandas(TypedSliceDict, IndexMixin):
-    # restrict keys to strings and
+    # allow any keys, but restrict
     # values to pandas objects
     _key_types = ()
     _value_types = (pd.Series, pd.DataFrame, pd.Index)
@@ -83,7 +81,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
 
     @property
     def _constructor(self) -> type[DictOfPandas]:
-        return DictOfPandas
+        return type(self)
 
     @property
     def empty(self) -> bool:
@@ -114,6 +112,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         if name not in self.keys():
             return name
         i = 1
+        self.union_index()
         while f"{name}({i})" in self.keys():
             i += 1
         return f"{name}({i})"
