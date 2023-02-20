@@ -7,15 +7,21 @@ import logging
 import pandas as pd
 
 
-def log_call(func: callable) -> callable:
-    """log the function name on call with level debug."""
+def log_call(level="DEBUG"):
+    level = level if isinstance(level, int) else logging.getLevelName(level)
+    assert isinstance(level, int)
 
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        logging.debug(f"{func.__name__} was called")
-        return func(*args, **kwargs)
+    def logit(func: callable) -> callable:
+        """log the function name on call."""
 
-    return wrapper
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            logging.log(level, f"{func.__name__} was called")
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return logit
 
 
 def index_equals_other(this: pd.Index, other: pd.Index):
@@ -56,10 +62,10 @@ def pd_obj_equals_other(
 
 
 def other_equals_this(
-    left,
-    right,
-    check_type=True,  # check isinstance(left,right) and vice versa
-    check_values=True,  # left.equals(right) or left == right
+    this,
+    other,
+    check_type=True,  # check isinstance(this,other) and vice versa
+    check_values=True,  # this.equals(other) or this == other
     check_index=None,  # obj.index
     check_columns=None,  # obj.columns
     check_dtypes=False,  # series.dtype, index.dtype, dataframes.dtype
@@ -75,9 +81,9 @@ def other_equals_this(
 
     Parameters
     ----------
-    left : Any
+    this : Any
         Object to compare against.
-    right : Any
+    other : Any
         Object to check.
     check_type : bool, default True
         Check if ``right`` is also an instance of ``left``'s type
@@ -109,13 +115,13 @@ def other_equals_this(
     -------
     bool
     """
-    if check_freq is None and hasattr(left, "freq"):
+    if check_freq is None and hasattr(this, "freq"):
         check_freq = True
         if check_index is None:
             check_index = False
-    if check_index is None and hasattr(left, "index"):
+    if check_index is None and hasattr(this, "index"):
         check_index = True
-    if check_columns is None and hasattr(left, "columns"):
+    if check_columns is None and hasattr(this, "columns"):
         check_columns = True
 
     def eq(a, b, name):
@@ -134,46 +140,46 @@ def other_equals_this(
         except (ValueError, TypeError, NotImplementedError):
             return False
 
-    if left is right:
+    if this is other:
         return True
 
-    if check_type and not isinstance(right, type(left)):
+    if check_type and not isinstance(other, type(this)):
         return False
 
-    if check_values and not eq(left, right, None):
+    if check_values and not eq(this, other, None):
         return False
 
     if check_index:  # pd.Series, pd.DataDframe
-        if not eq(left, right, "index"):
+        if not eq(this, other, "index"):
             return False
         if check_index_dtype:
-            if not eq(left.index, right.index, "dtype"):
+            if not eq(this.index, other.index, "dtype"):
                 return False
         if check_freq:
-            freqs = hasattr(left.index, "freq") + hasattr(right.index, "freq")
-            if freqs == 1 or freqs == 2 and not eq(left.index, right.index, "freq"):
+            freqs = hasattr(this.index, "freq") + hasattr(other.index, "freq")
+            if freqs == 1 or freqs == 2 and not eq(this.index, other.index, "freq"):
                 return False
     elif check_freq:  # pd.Index
-        if not eq(left, right, "freq"):
+        if not eq(this, other, "freq"):
             return False
 
     if check_columns:
-        if not eq(left, right, "columns"):
+        if not eq(this, other, "columns"):
             return False
         if check_columns_dtype:
-            if not eq(left.columns, right.columns, "dtype"):
+            if not eq(this.columns, other.columns, "dtype"):
                 return False
 
     if check_dtypes:
         for name in ["dtypes", "dtype"]:
-            if hasattr(left, name):
+            if hasattr(this, name):
                 break
         else:
             raise AttributeError(
-                "'left' obj has neither a attribute 'dtype' nor 'dtypes', but 'check_dtypes' was True."
+                "'this' obj has neither a attribute 'dtype' nor 'dtypes', but 'check_dtypes' was True."
             )
-        if not eq(left, right, name):
+        if not eq(this, other, name):
             return False
 
-    if check_names and not eq(left, right, "names"):
+    if check_names and not eq(this, other, "names"):
         return False

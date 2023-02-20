@@ -2,7 +2,7 @@
 
 from sliceable_dict import SliceDict, TypedSliceDict
 
-from .core import (
+from fancy_collections.core import (
     DictOfPandas,
 )
 

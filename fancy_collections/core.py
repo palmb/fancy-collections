@@ -7,8 +7,8 @@ from typing import List, Any
 import pandas as pd
 from sliceable_dict import TypedSliceDict
 
-from . import lib
-from .formatting import Formatter
+import fancy_collections.lib as lib
+from fancy_collections.formatting import Formatter
 
 
 class Axis:
@@ -98,9 +98,28 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
 
         Examples
         --------
-        todo example for empty keys
-        todo example for empty items
-        todo example vice-versa both
+        >>> di1 = DictOfPandas()
+        >>> di1.empty
+        True
+
+        A DictOfPandas is also considered empty if all items within it are empty
+
+        >>> di2 = DictOfPandas(a=pd.Series(dtype=float), b=pd.DataFrame())
+        >>> assert di2['a'].empty and di2['b'].empty
+        >>> di2.empty
+        True
+
+        To differentiate between a DictOfPandas with no items a DictOfSeries
+        with empty items use the buildin functions `len` or `bool`
+
+        >>> len(di1)
+        0
+        >>> bool(di1)
+        False
+        >>> len(di2)
+        2
+        >>> bool(di2)
+        True
 
         Returns
         -------
@@ -136,26 +155,26 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
 
         Examples
         --------
-        >>> frame = DictOfPandas(key0=pd.DataFrame({'c0': [0, 1], "c1": [1, 3]}))
-        >>> frame
+        >>> frame = DictOfPandas(key0=pd.DataFrame({'c0': [1, 1], "c1": [2, 2]}))
+        >>> frame   # doctest: +NORMALIZE_WHITESPACE
              key0 |
         ========= |
            c0  c1 |
-        0   0   1 |
-        1   2   3 |
+        0   1   2 |
+        1   1   2 |
 
-        >>> frame.flatten()
-           key0_c0 |    key0_c1 |
-        ========== | ========== |
-        0        0 | 0        1 |
-        1        2 | 1        3 |
+        >>> frame.flatten()   # doctest: +NORMALIZE_WHITESPACE
+        key0_c0 | key0_c1 |
+        ======= | ======= |
+        0     1 | 0     2 |
+        1     1 | 1     2 |
         """
         data = dict()
         for key, value in self.items():
             if isinstance(value, pd.DataFrame):
                 for col, ser in dict(value).items():
                     data[self._uniquify_name(f"{key}_{col}")] = ser
-            if promote_index and isinstance(value, pd.Index):
+            elif promote_index and isinstance(value, pd.Index):
                 data[key] = value.to_series()
             else:
                 data[key] = value
@@ -205,14 +224,14 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         >>> b = pd.Series(22, index=range(3))
         >>> c = pd.Series(33, index=range(1,9,3))
         >>> di = DictOfPandas(a=a, b=b, c=c)
-        >>> di
+        >>> di   # doctest: +NORMALIZE_WHITESPACE
             a |     b |     c |
         ===== | ===== | ===== |
         0  11 | 0  22 | 1  33 |
         1  11 | 1  22 | 4  33 |
               | 2  22 | 7  33 |
 
-        >>> di.to_dataframe()
+        >>> di.to_dataframe()   # doctest: +NORMALIZE_WHITESPACE
         columns     a     b     c
         0        11.0  22.0   NaN
         1        11.0  22.0  33.0
@@ -222,13 +241,13 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
 
         or is dropped if `how='inner'`
 
-        >>> di.to_dataframe(how='inner')
+        >>> di.to_dataframe(how='inner')   # doctest: +NORMALIZE_WHITESPACE
         columns   a   b   c
         1        11  22  33
 
         todo: examples with dataframe
         """
-        if how not in ['inner', 'outer']:
+        if how not in ["inner", "outer"]:
             raise ValueError("`how` must be one of 'inner' or 'outer'")
         df = pd.DataFrame(dict(self.flatten(promote_index=True)))
         if how == "inner":
