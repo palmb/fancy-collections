@@ -50,7 +50,7 @@ class Formatter:
             key = self.key_to_string(key, val)
             try:
                 string = self.stringify(val)
-            except BaseException:  # noqa
+            except Exception:  # noqa
                 string = NotImplemented
             if string is NotImplemented:
                 string = str(val)
@@ -85,7 +85,9 @@ class Formatter:
                 f"{self._stringify_empty_class(s)}\n"  # prevent black formatting
                 f" rows: {len(s)}\n"
             )
-        return s.to_string(**self._pd_options)
+        # We use to_frame because it uses less space between index and values
+        # return s.to_string(**self._pd_options)
+        return s.to_frame(name=' ').to_string(**{**self._pd_options, 'header': False})
 
     def _stringify_Index(self, idx: pd.Index) -> str:
         if idx.empty:

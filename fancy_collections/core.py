@@ -29,16 +29,13 @@ class Axis:
                 f"{self._name} has {len(instance.keys())} elements, "
                 f"but {len(value)} values was passed."
             )
-        # We must expand the zip now, because values()
-        # are a view and would be empty after clear().
-        data = dict(instance.data)  # shallow copy
-        new = dict(zip(value, instance.data.values()))
+        data: dict = instance.data
         try:
             instance.data = {}
             # We cannot set data directly, because inherit classes
             # might restrict keys to some specific types or values,
             # so we use the regular update() method.
-            instance.update(new)
+            instance.update(zip(value, data.values()))
             data = instance.data
         except Exception as e:
             raise type(e)(f"Cannot set new {self._name}, because {e}") from None
