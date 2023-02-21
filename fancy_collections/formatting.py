@@ -17,9 +17,8 @@ class Formatter:
         min_rows: int | None = None,
         show_df_column_names: bool = True,
     ):
-        self._pd_options = dict(
-            max_rows=max_rows, min_rows=min_rows, header=show_df_column_names
-        )
+        self.show_df_column_names = show_df_column_names
+        self._trunc_options = dict(max_rows=max_rows, min_rows=min_rows)
         self._obj = obj
         self.__to_render = []
 
@@ -77,7 +76,9 @@ class Formatter:
                 f" rows:    {r}\n"
                 f" columns: {c}\n"
             )
-        return df.to_string(**self._pd_options)
+        return df.to_string(
+            **self._trunc_options, header=self.show_df_column_names, index_names=False
+        )
 
     def _stringify_Series(self, s: pd.Series) -> str:
         if s.empty:
@@ -86,14 +87,16 @@ class Formatter:
                 f" rows: {len(s)}\n"
             )
         # We use to_frame because it uses less space between index and values
-        # return s.to_string(**self._pd_options)
-        return s.to_frame(name=' ').to_string(**{**self._pd_options, 'header': False})
+        # return s.to_string(**self._trunc_options, header=False)
+        return s.to_frame(name=" ").to_string(
+            **self._trunc_options, header=False, index_names=False
+        )
 
     def _stringify_Index(self, idx: pd.Index) -> str:
         if idx.empty:
             return f"{self._stringify_empty_class(idx)}"
         idx = pd.Series("", index=idx, dtype=str)
-        return idx.to_string(**self._pd_options)
+        return idx.to_string(**self._trunc_options, header=False)
 
     def _render(self) -> str:
         string = self.__make_header()
