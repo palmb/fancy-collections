@@ -177,7 +177,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
                 data[key] = value
         return self.__class__(data)
 
-    def to_dataframe(self, how="outer") -> pd.DataFrame:
+    def to_pandas(self, how="outer") -> pd.DataFrame:
         """
         Transform DictOfPandas to a pandas.DataFrame.
 
@@ -228,19 +228,19 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         1  11 | 1  22 | 4  33 |
               | 2  22 | 7  33 |
 
-        >>> di.to_dataframe()   # doctest: +NORMALIZE_WHITESPACE
-        columns     a     b     c
-        0        11.0  22.0   NaN
-        1        11.0  22.0  33.0
-        2         NaN  22.0   NaN
-        4         NaN   NaN  33.0
-        7         NaN   NaN  33.0
+        >>> di.to_pandas()   # doctest: +NORMALIZE_WHITESPACE
+              a     b     c
+        0  11.0  22.0   NaN
+        1  11.0  22.0  33.0
+        2   NaN  22.0   NaN
+        4   NaN   NaN  33.0
+        7   NaN   NaN  33.0
 
         or is dropped if `how='inner'`
 
-        >>> di.to_dataframe(how='inner')   # doctest: +NORMALIZE_WHITESPACE
-        columns   a   b   c
-        1        11  22  33
+        >>> di.to_pandas(how='inner')   # doctest: +NORMALIZE_WHITESPACE
+              a     b     c
+        1  11.0  22.0  33.0
 
         todo: examples with dataframe
         """
