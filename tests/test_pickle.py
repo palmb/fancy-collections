@@ -12,7 +12,9 @@ def klass(request):
     return request.param
 
 
-@pytest.mark.parametrize("kwargs", [dict(), dict(a=pd.Series(range(10))), dict(a=pd.Series([]))])
+@pytest.mark.parametrize(
+    "kwargs", [dict(), dict(a=pd.Series(range(10))), dict(a=pd.Series([]))]
+)
 def test_pickling(klass, kwargs):
     inst = klass(**kwargs)
     result = pickle.loads(pickle.dumps(inst))

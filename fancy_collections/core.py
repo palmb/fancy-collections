@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import functools
+import warnings
 from typing import List, Any
 
 import pandas as pd
@@ -176,6 +177,19 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             else:
                 data[key] = value
         return self.__class__(data)
+
+    def to_dataframe(self, how="outer") -> pd.DataFrame:
+        """
+        Transform DictOfPandas to a pandas.DataFrame.
+
+        .. deprecated:: 0.2.0
+           use `DictOfPandas.to_pandas()` instead.
+        """
+        warnings.warn(
+            f"`to_dataframe()` is deprecated use `to_pandas()` instead.",
+            category=DeprecationWarning,
+        )
+        return self.to_pandas(how)
 
     def to_pandas(self, how="outer") -> pd.DataFrame:
         """

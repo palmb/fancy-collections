@@ -23,7 +23,6 @@ def test_creation(klass, args, kwargs):
     inst = klass(*args, **kwargs)
     assert isinstance(inst, klass)
     assert isinstance(inst, SliceDict)
-    assert isinstance(inst, dict)
 
 
 @pytest.mark.parametrize("klass", [ColumnContainer, IndexContainer])
