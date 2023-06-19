@@ -5,7 +5,7 @@ import functools
 from typing import List, Any
 
 import pandas as pd
-from sliceable_dict import TypedSliceDict
+from sliceable_dict import TypedSliceDict, SliceDict
 
 import fancy_collections.lib as lib
 from fancy_collections.formatting import Formatter
@@ -44,7 +44,7 @@ class Axis:
 
 
 class IndexMixin:
-    def _get_indexes(self: dict) -> List[pd.Index]:
+    def _get_indexes(self: SliceDict) -> List[pd.Index]:
         indexes = []
         for obj in self.values():
             if isinstance(obj, pd.Index):
@@ -288,7 +288,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
     def __eq__(self, other):
         if self is other:
             return True
-        if not isinstance(other, dict):
+        if not isinstance(other, (dict, SliceDict)):
             return False
         if self.keys() != other.keys():
             return False
