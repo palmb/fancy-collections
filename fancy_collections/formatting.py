@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import annotations
 
+import shutil
 from typing import Tuple, List, Iterable, Any
 
+from matplotlib import shutil
 import pandas as pd
 
 
@@ -45,25 +47,49 @@ class Formatter:
     def to_string(self) -> str:
         if len(self._obj) == 0:
             return self._stringify_empty_class(self._obj)
+
+        objects = {}
+        widths = {}
         for key, val in self._obj.items():
             key = self.key_to_string(key, val)
-            try:
-                string = self.stringify(val)
-            except Exception:  # noqa
-                string = NotImplemented
-            if string is NotImplemented:
-                string = str(val)
-            self._add(key, string.splitlines())
+            lines = self.stringify(val).splitlines()
+            objects[key] = lines
+            widths[key] = self._get_maxlen(lines + [key])
+
+        display_width = int(shutil.get_terminal_size().columns * 0.8)
+
+        keys = tuple(widths.keys())
+        front_keys, back_keys = set(), set()
+        line_length = 0
+        for fkey, bkey in zip(keys, keys[::-1]):
+            line_length += widths[fkey]
+            if line_length < display_width:
+                front_keys.add(fkey)
+            line_length += widths[bkey]
+            if line_length < display_width:
+                back_keys.add(bkey)
+
+        for k, v in objects.items():
+            if k in front_keys:
+                self._add(k, v)
+
+        if not front_keys.intersection(back_keys):
+            self._add("...", ["..."])
+
+        for k, v in objects.items():
+            if k in back_keys and k not in front_keys:
+                self._add(k, objects[k])
+
         return self._render()
 
-    def stringify(self, obj: Any) -> str | NotImplemented:
+    def stringify(self, obj: Any) -> str:
         if isinstance(obj, pd.Index):
             return self._stringify_Index(obj)
         if isinstance(obj, pd.Series):
             return self._stringify_Series(obj)
         if isinstance(obj, pd.DataFrame):
             return self._stringify_DataFrame(obj)
-        return NotImplemented
+        return str(obj)
 
     def _stringify_DataFrame(self, df: pd.DataFrame) -> str:
         # if df.empty and not df.index.empty:
@@ -99,6 +125,7 @@ class Formatter:
         return idx.to_string(**self._trunc_options, header=False)
 
     def _render(self) -> str:
+        # self.__reduce_to_display_width()
         string = self.__make_header()
         string += self.__make_seperator_row()
         while True:
