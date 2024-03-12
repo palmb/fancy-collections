@@ -125,7 +125,6 @@ class Formatter:
         return idx.to_string(**self._trunc_options, header=False)
 
     def _render(self) -> str:
-        # self.__reduce_to_display_width()
         string = self.__make_header()
         string += self.__make_seperator_row()
         while True:
