@@ -136,7 +136,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             i += 1
         return f"{name}({i})"
 
-    def flatten(self, promote_index: bool = False, squeeze_columns: bool = True) -> DictOfPandas:
+    def flatten(self, promote_index: bool = False, multiindex: bool = False) -> DictOfPandas:
         """
         Promote dataframe columns to first level columns.
 
@@ -148,9 +148,9 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         promote_index : bool, default False
             Makes `pandas.Series` from items of type `pandas.Index` if True.
             Every item of the resulting DictOfPandas be a series then.
-        squeeze_columns: bool, default True
+        multiindex: bool, default False
             If True, the result column names will be pd.MultiIndex like, if False, unique
-            column names will be generated from the different levels of column indices
+            column names will be generated from the different levels of column indices.
 
         Returns
         -------
@@ -172,7 +172,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         0     1 | 0     2 |
         1     1 | 1     2 |
 
-        >>> frame.flatten(squeeze_columns=False)   # doctest: +NORMALIZE_WHITESPACE
+        >>> frame.flatten(multiindex=True)   # doctest: +NORMALIZE_WHITESPACE
         ('key0', 'c0') | ('key0', 'c1') |
         ============== | ============== |
              0  1      |      0  2      |
@@ -182,10 +182,10 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         for key, value in self.items():
             if isinstance(value, pd.DataFrame):
                 for col, ser in dict(value).items():
-                    if squeeze_columns:
-                        data[self._uniquify_name(f"{key}_{col}")] = ser
-                    else:
+                    if multiindex:
                         data[(key, col)] = ser
+                    else:
+                        data[self._uniquify_name(f"{key}_{col}")] = ser
             elif promote_index and isinstance(value, pd.Index):
                 data[key] = value.to_series()
             else:
@@ -205,7 +205,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         )
         return self.to_pandas(how)
 
-    def to_pandas(self, how="outer", fill_value=np.nan, squeeze_columns=True) -> pd.DataFrame:
+    def to_pandas(self, how="outer", fill_value=np.nan, multiindex=False) -> pd.DataFrame:
         """
         Transform DictOfPandas to a pandas.DataFrame.
 
@@ -233,7 +233,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
                 other columns.
         fill_value:
             Value to use for missing values. Defaults to NaN, but can be any “compatible” value.
-        squeeze_columns: bool, default True
+        multiindex: bool, default True
             If True, the result column names will be pd.MultiIndex like, if False, unique
             column names will be generated from the different levels of column indices
 
@@ -279,7 +279,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         """
         if how not in ["inner", "outer"]:
             raise ValueError("`how` must be one of 'inner' or 'outer'")
-        flat = dict(self.flatten(promote_index=True, squeeze_columns=squeeze_columns))
+        flat = dict(self.flatten(promote_index=True, multiindex=multiindex))
         if how == "outer":
             target_index = self.union_index()
         else: # how == "inner"
