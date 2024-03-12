@@ -205,7 +205,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         )
         return self.to_pandas(how)
 
-    def to_pandas(self, how="outer", fill_value=np.nan) -> pd.DataFrame:
+    def to_pandas(self, how="outer", fill_value=np.nan, squeeze_columns=True) -> pd.DataFrame:
         """
         Transform DictOfPandas to a pandas.DataFrame.
 
@@ -233,6 +233,9 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
                 other columns.
         fill_value:
             Value to use for missing values. Defaults to NaN, but can be any “compatible” value.
+        squeeze_columns: bool, default True
+            If True, the result column names will be pd.MultiIndex like, if False, unique
+            column names will be generated from the different levels of column indices
 
         Returns
         -------
@@ -276,7 +279,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         """
         if how not in ["inner", "outer"]:
             raise ValueError("`how` must be one of 'inner' or 'outer'")
-        flat = dict(self.flatten(promote_index=True))
+        flat = dict(self.flatten(promote_index=True, squeeze_columns=squeeze_columns))
         if how == "outer":
             target_index = self.union_index()
         else: # how == "inner"
