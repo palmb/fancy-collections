@@ -4,7 +4,7 @@ from __future__ import annotations
 import shutil
 from typing import Tuple, List, Iterable, Any
 
-from matplotlib import shutil
+import shutil
 import pandas as pd
 
 
