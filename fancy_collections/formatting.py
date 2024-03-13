@@ -4,7 +4,7 @@ from __future__ import annotations
 import shutil
 from typing import Tuple, List, Iterable, Any
 
-from matplotlib import shutil
+import shutil
 import pandas as pd
 
 
@@ -73,7 +73,7 @@ class Formatter:
             if k in front_keys:
                 self._add(k, v)
 
-        if not front_keys.intersection(back_keys):
+        if not front_keys.intersection(back_keys) and front_keys.union(back_keys) != set(keys):
             self._add("...", ["..."])
 
         for k, v in objects.items():
@@ -125,7 +125,6 @@ class Formatter:
         return idx.to_string(**self._trunc_options, header=False)
 
     def _render(self) -> str:
-        # self.__reduce_to_display_width()
         string = self.__make_header()
         string += self.__make_seperator_row()
         while True:
