@@ -44,6 +44,11 @@ class Formatter:
         return str(key)
 
     def to_string(self) -> str:
+
+        def _calc_linelength(widths, columns):
+            # +3 to take the potential placholder into account and its sperator into account
+            return sum(widths[c] for c in columns) + len(self.column_seperator) * len(columns) + 3
+
         if len(self._obj) == 0:
             return self._stringify_empty_class(self._obj)
 
@@ -55,18 +60,23 @@ class Formatter:
             objects[key] = lines
             widths[key] = self._get_maxlen(lines + [key])
 
-        display_width = int(shutil.get_terminal_size().columns * 0.8)
+        display_width = shutil.get_terminal_size().columns
 
         keys = tuple(widths.keys())
         front_keys, back_keys = set(), set()
-        line_length = 0
+
         for fkey, bkey in zip(keys, keys[::-1]):
-            line_length += widths[fkey]
+            line_length = _calc_linelength(widths, front_keys | back_keys | {fkey,})
             if line_length < display_width:
                 front_keys.add(fkey)
-            line_length += widths[bkey]
+            else:
+                break
+
+            line_length = _calc_linelength(widths, front_keys | back_keys | {bkey,})
             if line_length < display_width:
                 back_keys.add(bkey)
+            else:
+                break
 
         for k, v in objects.items():
             if k in front_keys:
