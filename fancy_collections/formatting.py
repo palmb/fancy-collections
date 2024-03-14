@@ -4,6 +4,7 @@ from __future__ import annotations
 import shutil
 from typing import Tuple, List, Iterable, Any
 
+import shutil
 import pandas as pd
 
 
@@ -44,11 +45,6 @@ class Formatter:
         return str(key)
 
     def to_string(self) -> str:
-
-        def _calc_linelength(widths, columns):
-            # +3 to take the potential placholder into account and its sperator into account
-            return sum(widths[c] for c in columns) + len(self.column_seperator) * len(columns) + 3
-
         if len(self._obj) == 0:
             return self._stringify_empty_class(self._obj)
 
@@ -60,23 +56,19 @@ class Formatter:
             objects[key] = lines
             widths[key] = self._get_maxlen(lines + [key])
 
-        display_width = shutil.get_terminal_size().columns
+        # take the potential placeholder into acount
+        display_width = int(shutil.get_terminal_size().columns) - 3 - len(self.column_seperator)
 
         keys = tuple(widths.keys())
         front_keys, back_keys = set(), set()
-
+        line_length = 0
         for fkey, bkey in zip(keys, keys[::-1]):
-            line_length = _calc_linelength(widths, front_keys | back_keys | {fkey,})
+            line_length += widths[fkey] + len(self.column_seperator)
             if line_length < display_width:
                 front_keys.add(fkey)
-            else:
-                break
-
-            line_length = _calc_linelength(widths, front_keys | back_keys | {bkey,})
+            line_length += widths[bkey] + len(self.column_seperator)
             if line_length < display_width:
                 back_keys.add(bkey)
-            else:
-                break
 
         for k, v in objects.items():
             if k in front_keys:
