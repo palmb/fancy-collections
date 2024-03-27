@@ -74,7 +74,7 @@ class Formatter:
             if k in front_keys:
                 self._add(k, v)
 
-        if not front_keys.intersection(back_keys) and front_keys.union(back_keys) != set(keys):
+        if len(front_keys) + len(back_keys) < len(keys):
             self._add("...", ["..."])
 
         for k, v in objects.items():
