@@ -55,16 +55,17 @@ class Formatter:
             objects[key] = lines
             widths[key] = self._get_maxlen(lines + [key])
 
-        display_width = int(shutil.get_terminal_size().columns * 0.8)
+        # take the potential placeholder into acount
+        display_width = int(shutil.get_terminal_size().columns) - 3 - len(self.column_seperator)
 
         keys = tuple(widths.keys())
         front_keys, back_keys = set(), set()
         line_length = 0
         for fkey, bkey in zip(keys, keys[::-1]):
-            line_length += widths[fkey]
+            line_length += widths[fkey] + len(self.column_seperator)
             if line_length < display_width:
                 front_keys.add(fkey)
-            line_length += widths[bkey]
+            line_length += widths[bkey] + len(self.column_seperator)
             if line_length < display_width:
                 back_keys.add(bkey)
 
@@ -72,7 +73,7 @@ class Formatter:
             if k in front_keys:
                 self._add(k, v)
 
-        if not front_keys.intersection(back_keys) and front_keys.union(back_keys) != set(keys):
+        if len(front_keys) + len(back_keys) < len(keys):
             self._add("...", ["..."])
 
         for k, v in objects.items():
