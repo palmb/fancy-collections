@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import annotations
 
+import shutil
 from typing import Tuple, List, Iterable, Any
 
 import pandas as pd
@@ -45,25 +46,50 @@ class Formatter:
     def to_string(self) -> str:
         if len(self._obj) == 0:
             return self._stringify_empty_class(self._obj)
+
+        objects = {}
+        widths = {}
         for key, val in self._obj.items():
             key = self.key_to_string(key, val)
-            try:
-                string = self.stringify(val)
-            except Exception:  # noqa
-                string = NotImplemented
-            if string is NotImplemented:
-                string = str(val)
-            self._add(key, string.splitlines())
+            lines = self.stringify(val).splitlines()
+            objects[key] = lines
+            widths[key] = self._get_maxlen(lines + [key])
+
+        # take the potential placeholder into acount
+        display_width = int(shutil.get_terminal_size().columns) - 3 - len(self.column_seperator)
+
+        keys = tuple(widths.keys())
+        front_keys, back_keys = set(), set()
+        line_length = 0
+        for fkey, bkey in zip(keys, keys[::-1]):
+            line_length += widths[fkey] + len(self.column_seperator)
+            if line_length < display_width:
+                front_keys.add(fkey)
+            line_length += widths[bkey] + len(self.column_seperator)
+            if line_length < display_width:
+                back_keys.add(bkey)
+
+        for k, v in objects.items():
+            if k in front_keys:
+                self._add(k, v)
+
+        if len(front_keys) + len(back_keys) < len(keys):
+            self._add("...", ["..."])
+
+        for k, v in objects.items():
+            if k in back_keys and k not in front_keys:
+                self._add(k, objects[k])
+
         return self._render()
 
-    def stringify(self, obj: Any) -> str | NotImplemented:
+    def stringify(self, obj: Any) -> str:
         if isinstance(obj, pd.Index):
             return self._stringify_Index(obj)
         if isinstance(obj, pd.Series):
             return self._stringify_Series(obj)
         if isinstance(obj, pd.DataFrame):
             return self._stringify_DataFrame(obj)
-        return NotImplemented
+        return str(obj)
 
     def _stringify_DataFrame(self, df: pd.DataFrame) -> str:
         # if df.empty and not df.index.empty:
