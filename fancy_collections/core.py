@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import annotations
 
+import numpy as np
+
 import functools
 import warnings
 from typing import List, Any
@@ -134,7 +136,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             i += 1
         return f"{name}({i})"
 
-    def flatten(self, promote_index: bool = False) -> DictOfPandas:
+    def flatten(self, promote_index: bool = False, multiindex: bool = False) -> DictOfPandas:
         """
         Promote dataframe columns to first level columns.
 
@@ -146,6 +148,9 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         promote_index : bool, default False
             Makes `pandas.Series` from items of type `pandas.Index` if True.
             Every item of the resulting DictOfPandas be a series then.
+        multiindex: bool, default False
+            If True, the result column names will be pd.MultiIndex like, if False, unique
+            column names will be generated from the different levels of column indices.
 
         Returns
         -------
@@ -166,12 +171,21 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         ======= | ======= |
         0     1 | 0     2 |
         1     1 | 1     2 |
+
+        >>> frame.flatten(multiindex=True)   # doctest: +NORMALIZE_WHITESPACE
+        ('key0', 'c0') | ('key0', 'c1') |
+        ============== | ============== |
+             0  1      |      0  2      |
+             1  1      |      1  2      |
         """
         data = dict()
         for key, value in self.items():
             if isinstance(value, pd.DataFrame):
                 for col, ser in dict(value).items():
-                    data[self._uniquify_name(f"{key}_{col}")] = ser
+                    if multiindex:
+                        data[(key, col)] = ser
+                    else:
+                        data[self._uniquify_name(f"{key}_{col}")] = ser
             elif promote_index and isinstance(value, pd.Index):
                 data[key] = value.to_series()
             else:
@@ -191,7 +205,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         )
         return self.to_pandas(how)
 
-    def to_pandas(self, how="outer") -> pd.DataFrame:
+    def to_pandas(self, how="outer", fill_value=np.nan, multiindex=False) -> pd.DataFrame:
         """
         Transform DictOfPandas to a pandas.DataFrame.
 
@@ -217,6 +231,11 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
                 for the resulting index. Filling logic is not needed, but values
                 are dropped, if a column has indices that are not known to all
                 other columns.
+        fill_value:
+            Value to use for missing values. Defaults to NaN, but can be any “compatible” value.
+        multiindex: bool, default True
+            If True, the result column names will be pd.MultiIndex like, if False, unique
+            column names will be generated from the different levels of column indices
 
         Returns
         -------
@@ -260,9 +279,12 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         """
         if how not in ["inner", "outer"]:
             raise ValueError("`how` must be one of 'inner' or 'outer'")
-        df = pd.DataFrame(dict(self.flatten(promote_index=True)))
-        if how == "inner":
-            df = df.reindex(self.shared_index())
+        flat = dict(self.flatten(promote_index=True, multiindex=multiindex))
+        if how == "outer":
+            target_index = self.union_index()
+        else: # how == "inner"
+            target_index = self.shared_index()
+        df = pd.DataFrame({k: v.reindex(target_index, fill_value=fill_value) for k, v in flat.items()})
         return df
 
     def __repr__(self) -> str:
