@@ -158,6 +158,7 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
 
         Examples
         --------
+        >>> from fancy_collections import DictOfPandas
         >>> frame = DictOfPandas(key0=pd.DataFrame({'c0': [1, 1], "c1": [2, 2]}))
         >>> frame   # doctest: +NORMALIZE_WHITESPACE
              key0 |
