@@ -17,9 +17,10 @@ class Formatter:
         max_rows: int | None = None,
         min_rows: int | None = None,
         show_df_column_names: bool = True,
+        max_colwidth: int = 50
     ):
         self.show_df_column_names = show_df_column_names
-        self._trunc_options = dict(max_rows=max_rows, min_rows=min_rows)
+        self._trunc_options = dict(max_rows=max_rows, min_rows=min_rows, max_colwidth=max_colwidth)
         self._obj = obj
         self.__to_render = []
 
@@ -47,6 +48,8 @@ class Formatter:
         if len(self._obj) == 0:
             return self._stringify_empty_class(self._obj)
 
+        display_width = int(shutil.get_terminal_size().columns) - 3 - len(self.column_seperator)
+
         objects = {}
         widths = {}
         for key, val in self._obj.items():
@@ -54,9 +57,6 @@ class Formatter:
             lines = self.stringify(val).splitlines()
             objects[key] = lines
             widths[key] = self._get_maxlen(lines + [key])
-
-        # take the potential placeholder into acount
-        display_width = int(shutil.get_terminal_size().columns) - 3 - len(self.column_seperator)
 
         keys = tuple(widths.keys())
         front_keys, back_keys = set(), set()
@@ -68,6 +68,10 @@ class Formatter:
             line_length += widths[bkey] + len(self.column_seperator)
             if line_length < display_width:
                 back_keys.add(bkey)
+
+        if not front_keys:
+            # ensure that we have at least on column
+            front_keys.add(keys[0])
 
         for k, v in objects.items():
             if k in front_keys:
