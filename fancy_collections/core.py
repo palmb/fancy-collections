@@ -136,7 +136,9 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
             i += 1
         return f"{name}({i})"
 
-    def flatten(self, promote_index: bool = False, multiindex: bool = False) -> DictOfPandas:
+    def flatten(
+        self, promote_index: bool = False, multiindex: bool = False
+    ) -> DictOfPandas:
         """
         Promote dataframe columns to first level columns.
 
@@ -206,7 +208,9 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         )
         return self.to_pandas(how)
 
-    def to_pandas(self, how="outer", fill_value=np.nan, multiindex=False) -> pd.DataFrame:
+    def to_pandas(
+        self, how="outer", fill_value=np.nan, multiindex=False
+    ) -> pd.DataFrame:
         """
         Transform DictOfPandas to a pandas.DataFrame.
 
@@ -283,9 +287,11 @@ class DictOfPandas(TypedSliceDict, IndexMixin):
         flat = dict(self.flatten(promote_index=True, multiindex=multiindex))
         if how == "outer":
             target_index = self.union_index()
-        else: # how == "inner"
+        else:  # how == "inner"
             target_index = self.shared_index()
-        df = pd.DataFrame({k: v.reindex(target_index, fill_value=fill_value) for k, v in flat.items()})
+        df = pd.DataFrame(
+            {k: v.reindex(target_index, fill_value=fill_value) for k, v in flat.items()}
+        )
         return df
 
     def __repr__(self) -> str:
